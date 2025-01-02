@@ -39,5 +39,5 @@ public class User {
     @ManyToMany(mappedBy = "users")
     @JsonIgnoreProperties({"userUpLoad","users"}) // Ngăn vòng lặp khi serialize/deserialize
     private Set<Post> posts = new HashSet<>();
-    private String token;
+
 }

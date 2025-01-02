@@ -66,7 +66,4 @@ public class UserService {
         return userRepository.findAll().stream().filter(u->u.getUsername().equals(username)).findFirst().orElse(null);
     }
 
-    public User getUserByToken(String token) {
-        return userRepository.findAll().stream().filter(u->u.getToken().equals(token)).findFirst().orElse(null);
-    }
 }

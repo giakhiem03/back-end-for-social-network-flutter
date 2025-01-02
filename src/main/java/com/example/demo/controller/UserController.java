@@ -4,14 +4,14 @@ import com.example.demo.DTO.*;
 import com.example.demo.DTO.UserDTO;
 import com.example.demo.models.*;
 import com.example.demo.services.*;
-import com.example.demo.token.AuthResponse;
-import com.example.demo.token.JwtTokenProvider;
-import com.example.demo.token.JwtUtil;
 import lombok.Getter;
 import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,8 +47,7 @@ public class UserController {
     private FriendsService friendsService;
     @Autowired
     private MessageService messageService;
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -64,6 +63,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody LoginDTO loginRequest) {
+
         // Create an instance of BCryptPasswordEncoder
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -76,15 +76,6 @@ public class UserController {
         if (user.isPresent() && passwordEncoder.matches(loginRequest.getPassword(), user.get().getPassword())) {
             // Set user status to active
             user.get().setStatus(true);
-            try {
-                System.out.println("Generating token for user: " + user.get().getUsername());
-                String token = jwtTokenProvider.generateJwtToken(user.get().getUsername());
-                System.out.println("Token generated successfully: " + token);
-                user.get().setToken(token);
-
-            }
-
-            catch (Exception e) { e.printStackTrace(); return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();}
 
             userService.saveUser(user.get());
 
@@ -96,6 +87,12 @@ public class UserController {
         }
     }
 
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(String username) {
+        userService.getUserByUsername(username).setStatus(false);
+        return ResponseEntity.ok("Logout successful");
+    }
 
     @PostMapping("/register")
     public ResponseEntity<User> createUser(@RequestBody UserDTO userDTO) {
@@ -447,37 +444,20 @@ public class UserController {
         }
     }
 
+    @PostMapping("/check-status-user")
+    public ResponseEntity<User> checkStatus(String username) {
+        User u = userService.getAll()
+                .stream()
+                .filter(p -> p.getUsername().equals(username))
+                .findFirst()
+                .orElse(null);
 
-    @PostMapping("/verify-token")
-    public ResponseEntity<?> verifyToken(@RequestHeader("Authorization") String token) {
-        try {
-            // Loại bỏ "Bearer " khỏi token nếu có
-            if (token.startsWith("Bearer ")) {
-                token = token.substring(7);
-            }
-
-            // Kiểm tra token có hợp lệ không
-            boolean isValid = jwtTokenProvider.validateToken(token);
-
-            if (isValid) {
-                // Token hợp lệ, trả về trạng thái OK
-                return ResponseEntity.ok("Token is valid");
-            } else {
-                // Token không hợp lệ
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
-        }
-    }
-
-    @GetMapping("/getUserByToken/{token}")
-    public ResponseEntity<User> getUserByToken(@RequestHeader("Authorization") String token) {
-        try {
-            return ResponseEntity.ok(userService.getUserByUsername(jwtTokenProvider.getUsernameFromToken(token)));
-        }catch (Exception e){
+        if (u != null) {
+            return ResponseEntity.ok(u);
+        } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
+
 
 }
