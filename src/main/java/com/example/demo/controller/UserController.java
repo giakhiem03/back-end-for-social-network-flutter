@@ -63,7 +63,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody LoginDTO loginRequest) {
-
+        getIpv4();
         // Create an instance of BCryptPasswordEncoder
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
