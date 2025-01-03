@@ -99,7 +99,8 @@ public class UserController {
         User u = userService.getUserByUsername(userDTO.getUsername());
         if(u==null){
             User user = new User();
-            user.setFullName(userDTO.getFullName());
+            String fullName = userDTO.getFullName() != null ? userDTO.getFullName() : userDTO.getUsername();
+            user.setFullName(fullName);
             user.setUsername(userDTO.getUsername());
 
             // Hash the password before setting it
@@ -382,10 +383,11 @@ public class UserController {
     }
 
     @PutMapping("/acceptFriend/{friendId}")
-    public ResponseEntity<String> acceptFriend(@PathVariable int friendId) {
+    public ResponseEntity<List<Friends>> acceptFriend(@PathVariable int friendId) {
         try {
             friendsService.acceptFriend(friendId);
-            return ResponseEntity.ok("Successful Accept Friend");
+            var list = friendsService.getAll();
+            return ResponseEntity.ok(list);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
